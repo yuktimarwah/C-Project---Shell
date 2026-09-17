@@ -1,0 +1,16 @@
+# Compiled object files
+*.o
+
+# Executables
+*.out
+*.exe
+
+# Build directories
+build/
+
+# IDE files
+.vscode/
+.vs/
+
+# OS files
+.DS_Store

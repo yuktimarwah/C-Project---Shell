@@ -4,6 +4,7 @@
 # Executables
 *.out
 *.exe
+PipeDream
 
 # Build directories
 build/

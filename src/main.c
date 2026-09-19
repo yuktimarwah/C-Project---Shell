@@ -36,6 +36,7 @@ int main (void)
 		if (pid == 0)
 		{
 			execvp(args[0], args);
+			printf("PipeDream: command not found\n");
 		}
 		else
 		{

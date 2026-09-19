@@ -31,6 +31,12 @@ int main (void)
 
 		args[count] = NULL;
 
+		if (strcmp(args[0], "cd") == 0)
+		{
+			chdir(args[1]);
+			continue;
+		}
+
 		pid_t pid = fork();
 
 		if (pid == 0)

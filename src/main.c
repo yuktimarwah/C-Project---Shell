@@ -33,9 +33,19 @@ int main (void)
 
 		if (strcmp(args[0], "cd") == 0)
 		{
-			chdir(args[1]);
+			if (args[1] == NULL)
+			{
+				printf("PipeDream: expected directory\n");
+			}
+			else if (chdir(args[1]) != 0)
+			{
+				printf("PipeDream: no such directory\n");
+			}
+			
 			continue;
-		}
+
+			}
+
 
 		pid_t pid = fork();
 

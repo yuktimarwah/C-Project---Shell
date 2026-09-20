@@ -46,6 +46,16 @@ int main (void)
 
 			}
 
+		if (strcmp(args[0], "pwd") == 0)
+		{
+			char cwd[1024];
+
+			getcwd(cwd, sizeof(cwd));
+			printf("%s\n", cwd);
+
+			continue;
+		}
+
 
 		pid_t pid = fork();
 

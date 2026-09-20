@@ -72,6 +72,12 @@ int main (void)
 
 			}
 
+		if (strcmp(args[0], "exit") == 0) {
+			
+			return 0;
+
+		}
+
 		pid_t pid = fork();
 
 		if (pid == 0)

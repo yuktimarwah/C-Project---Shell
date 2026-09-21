@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 int main (void)
 {
@@ -78,10 +79,42 @@ int main (void)
 
 		}
 
+		char *output_file = NULL;
+
+		int i = 0;
+
+		while (args[i] != NULL) 
+		{
+			if (strcmp(args[i], ">") == 0)
+			{
+				if (args[i + 1] != NULL) 
+				{
+				output_file = args[i + 1];
+				args[i] = NULL;
+				}
+			}
+
+			i++;
+		}
+
 		pid_t pid = fork();
 
 		if (pid == 0)
 		{
+			if (output_file != NULL)
+			{
+				int fd = open(output_file,O_WRONLY | O_CREAT | O_TRUNC, 0644);
+				if (fd == -1) 
+				{
+					printf("PipeDream: cannot open output file\n");
+					return 1;
+				}
+
+				dup2(fd, STDOUT_FILENO);
+
+				close(fd);
+			}
+
 			execvp(args[0], args);
 			printf("PipeDream: command not found\n");
 		}

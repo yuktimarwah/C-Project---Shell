@@ -66,6 +66,8 @@ int main (void)
 
 		char *output_file = NULL;
 
+		char *input_file = NULL;
+
 		int i = 0;
 
 		while (args[i] != NULL) 
@@ -74,8 +76,17 @@ int main (void)
 			{
 				if (args[i + 1] != NULL) 
 				{
-				output_file = args[i + 1];
-				args[i] = NULL;
+					output_file = args[i + 1];
+					args[i] = NULL;
+				}
+			}
+
+			else if (strcmp(args[i], "<") == 0)
+			{
+				if (args[i + 1] != NULL)
+				{
+					input_file = args[i + 1];
+					args[i] = NULL;
 				}
 			}
 
@@ -113,6 +124,21 @@ int main (void)
 				}
 
 				dup2(fd, STDOUT_FILENO);
+
+				close(fd);
+			}
+
+			if (input_file != NULL) 
+			{
+				int fd = open(input_file, O_RDONLY);
+
+				if (fd == -1) 
+				{
+					printf("PipeDream: cannot open input file\n");
+					return 1;
+				}
+
+				dup2(fd, STDIN_FILENO);
 
 				close(fd);
 			}

@@ -68,6 +68,8 @@ int main (void)
 
 		char *input_file = NULL;
 
+		int pipe_index = -1;
+
 		int i = 0;
 
 		while (args[i] != NULL) 
@@ -90,6 +92,12 @@ int main (void)
 				}
 			}
 
+			else if (strcmp(args[i], "|") == 0)
+			{
+				pipe_index = i;
+				args[i] = NULL;
+			}
+
 			i++;
 		}
 
@@ -109,6 +117,43 @@ int main (void)
 
                         }
 
+		if (pipe_index != -1) {
+
+			int fd[2];
+			pipe(fd);
+
+			pid_t pid1 = fork();
+
+			if (pid1 == 0)
+			{
+				dup2(fd[1], STDOUT_FILENO);
+				close(fd[0]);
+				close(fd[1]);
+				execvp(args[0], args);
+				printf("PipeDream: command not found\n");
+				return 1;
+			}
+
+			pid_t pid2 = fork();
+
+			if (pid2 == 0) 
+			{
+				dup2(fd[0], STDIN_FILENO);
+				close(fd[0]);
+				close(fd[1]);
+				execvp(args[pipe_index + 1], &args[pipe_index + 1]);
+				printf("PipeDream: command not found\n");
+				return 1;
+			}
+
+			close(fd[0]);
+			close(fd[1]);
+
+			wait(NULL);
+			wait(NULL);
+
+			continue;
+		}
 
 		pid_t pid = fork();
 

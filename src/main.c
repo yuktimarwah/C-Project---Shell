@@ -4,8 +4,21 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
+const char *get_os()
+{
+#ifdef _WIN32
+	return "Windows";
+#elif __linux__
+	return "Linux";
+#else
+	return "Unknown";
+#endif
+}
+
 int main (void)
 {
+	printf("Running on: %s\n", get_os());
+
 	char input[100];
 	char *args[10];
 

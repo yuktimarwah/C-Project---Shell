@@ -15,6 +15,24 @@ const char *get_os()
 #endif
 }
 
+
+const char *get_command(const char *command)
+{
+#ifdef _WIN32
+	if (strcmp(command, "list") == 0)
+	{
+		return "dir";
+	}
+#elif __linux__
+	if (strcmp(command, "list") == 0)
+	{
+		return "ls";
+	}
+#endif
+	return command;
+}
+
+
 int main (void)
 {
 	printf("Running on: %s\n", get_os());
@@ -142,6 +160,9 @@ int main (void)
 				dup2(fd[1], STDOUT_FILENO);
 				close(fd[0]);
 				close(fd[1]);
+
+				args[0] = (char *)get_command(args[0]);
+
 				execvp(args[0], args);
 				printf("PipeDream: command not found\n");
 				return 1;
@@ -200,6 +221,7 @@ int main (void)
 
 				close(fd);
 			}
+                        args[0] = (char *)get_command(args[0]);
 
 			execvp(args[0], args);
 			printf("PipeDream: command not found\n");

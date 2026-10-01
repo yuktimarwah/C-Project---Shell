@@ -23,10 +23,19 @@ const char *get_command(const char *command)
 	{
 		return "dir";
 	}
+	if (strcmp(command, "show") == 0)
+	{
+		return "type";
+	}
+
 #elif __linux__
 	if (strcmp(command, "list") == 0)
 	{
 		return "ls";
+	}
+	if (strcmp(command, "show") == 0)
+	{
+		return "cat";
 	}
 #endif
 	return command;

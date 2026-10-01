@@ -27,6 +27,10 @@ const char *get_command(const char *command)
 	{
 		return "type";
 	}
+	if (strcmp(command, "clear") == 0) 
+	{
+		return "cls";
+	}
 
 #elif __linux__
 	if (strcmp(command, "list") == 0)
@@ -36,6 +40,10 @@ const char *get_command(const char *command)
 	if (strcmp(command, "show") == 0)
 	{
 		return "cat";
+	}
+	if (strcmp(command, "clear") == 0)
+	{
+		return "clear";
 	}
 #endif
 	return command;

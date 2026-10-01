@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <direct.h>
+#else
 #include <unistd.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#endif
 
 const char *get_os()
 {
@@ -51,11 +57,101 @@ const char *get_command(const char *command)
 
 void execute_command(char *args[])
 {
-	args[0] = (char *)get_command(args[0]);
+        args[0] = (char *)get_command(args[0]);
 
-	execvp(args[0], args);
+#ifdef _WIN32
 
-	printf("PipeDream: command not found\n");
+        char command[1000] = "";
+
+        for (int i = 0; args[i] != NULL; i++)
+        {
+                strcat(command, args[i]);
+                strcat(command, " ");
+        }
+
+        char command_line[1100];
+
+        snprintf(command_line, sizeof(command_line),"cmd.exe /C \"%s\"", command);
+
+         STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+
+        ZeroMemory(&si, sizeof(si));
+        ZeroMemory(&pi, sizeof(pi));
+
+        si.cb = sizeof(si);
+
+        if (!CreateProcessA(
+                NULL,
+                command_line,
+                NULL,
+                NULL,
+                FALSE,
+                0,
+                NULL,
+                NULL,
+                &si,
+                &pi))
+        {
+                printf("PipeDream: command not found\n");
+                return;
+        }
+
+        WaitForSingleObject(pi.hProcess, INFINITE);
+
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+#elif __linux__
+
+        execvp(args[0], args);
+
+        printf("PipeDream: command not found\n");
+
+#endif
+
+}
+
+void execute_process(char *args[], char *output_file, char *input_file)
+{
+        pid_t pid = fork();
+
+        if (pid == 0)
+        {
+                if (output_file != NULL)
+                {
+                        int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+                        if (fd == -1)
+                        {
+                                printf("PipeDream: cannot open output file\n");
+                                return;
+                        }
+
+                        dup2(fd, STDOUT_FILENO);
+                        close(fd);
+                }
+
+                if (input_file != NULL)
+                {
+                        int fd = open(input_file, O_RDONLY);
+
+                        if (fd == -1)
+                        {
+                                printf("PipeDream: cannot open input file\n");
+                                return;
+                        }
+
+                        dup2(fd, STDIN_FILENO);
+                        close(fd);
+                }
+
+                execute_command(args);
+        }
+        else
+        {
+                wait(NULL);
+        }
 }
 
 void execute_pipe(char *args[], int pipe_index)
@@ -139,7 +235,13 @@ int main (void)
 			{
 				printf("PipeDream: expected directory\n");
 			}
-			else if (chdir(args[1]) != 0)
+			else if (
+#ifdef _WIN32
+					_chdir(args[1])
+#else
+					chdir(args[1])
+#endif
+					!= 0)
 			{
 				printf("PipeDream: no such directory\n");
 			}
@@ -152,7 +254,11 @@ int main (void)
 		{
 			char cwd[1024];
 
-			getcwd(cwd, sizeof(cwd));
+			#ifdef _WIN32
+        _getcwd(cwd, sizeof(cwd));
+#else
+        getcwd(cwd, sizeof(cwd));
+#endif
 			printf("%s\n", cwd);
 
 			continue;
@@ -224,46 +330,10 @@ int main (void)
 			continue;
 		}
 
-		pid_t pid = fork();
+		execute_process(args, output_file, input_file);
 
-		if (pid == 0)
-		{
-			if (output_file != NULL)
-			{
-				int fd = open(output_file,O_WRONLY | O_CREAT | O_TRUNC, 0644);
-				if (fd == -1) 
-				{
-					printf("PipeDream: cannot open output file\n");
-					return 1;
-				}
 
-				dup2(fd, STDOUT_FILENO);
-
-				close(fd);
-			}
-
-			if (input_file != NULL) 
-			{
-				int fd = open(input_file, O_RDONLY);
-
-				if (fd == -1) 
-				{
-					printf("PipeDream: cannot open input file\n");
-					return 1;
-				}
-
-				dup2(fd, STDIN_FILENO);
-
-				close(fd);
-			}
-                        
-			execute_command(args);
-
-		}
-		else
-		{
-			wait(NULL);
-		}
+		
 	}
 
 	return 0;

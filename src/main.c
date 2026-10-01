@@ -49,6 +49,59 @@ const char *get_command(const char *command)
 	return command;
 }
 
+void execute_command(char *args[])
+{
+	args[0] = (char *)get_command(args[0]);
+
+	execvp(args[0], args);
+
+	printf("PipeDream: command not found\n");
+}
+
+void execute_pipe(char *args[], int pipe_index)
+{
+	int fd[2];
+	pipe(fd);
+
+	pid_t pid1 = fork();
+
+	if (pid1 == 0)
+	{
+		dup2(fd[1], STDOUT_FILENO);
+
+		close(fd[0]);
+		close(fd[1]);
+
+		args[0] = (char *)get_command(args[0]);
+
+		execvp(args[0], args);
+
+		printf("PipeDream: command not found\n");
+		return;
+	}
+
+	pid_t pid2 = fork();
+
+	if (pid2 == 0)
+	{
+		dup2(fd[0], STDIN_FILENO);
+
+		close(fd[0]);
+		close(fd[1]);
+
+		execvp(args[pipe_index + 1], &args[pipe_index + 1]);
+
+		printf("PipeDream: command not found\n");
+		return;
+	}
+
+	close(fd[0]);
+	close(fd[1]);
+
+	wait(NULL);
+	wait(NULL);
+}
+
 
 int main (void)
 {
@@ -165,44 +218,9 @@ int main (void)
 
                         }
 
-		if (pipe_index != -1) {
-
-			int fd[2];
-			pipe(fd);
-
-			pid_t pid1 = fork();
-
-			if (pid1 == 0)
-			{
-				dup2(fd[1], STDOUT_FILENO);
-				close(fd[0]);
-				close(fd[1]);
-
-				args[0] = (char *)get_command(args[0]);
-
-				execvp(args[0], args);
-				printf("PipeDream: command not found\n");
-				return 1;
-			}
-
-			pid_t pid2 = fork();
-
-			if (pid2 == 0) 
-			{
-				dup2(fd[0], STDIN_FILENO);
-				close(fd[0]);
-				close(fd[1]);
-				execvp(args[pipe_index + 1], &args[pipe_index + 1]);
-				printf("PipeDream: command not found\n");
-				return 1;
-			}
-
-			close(fd[0]);
-			close(fd[1]);
-
-			wait(NULL);
-			wait(NULL);
-
+		if (pipe_index != -1)
+		{
+			execute_pipe(args, pipe_index);
 			continue;
 		}
 
@@ -238,10 +256,9 @@ int main (void)
 
 				close(fd);
 			}
-                        args[0] = (char *)get_command(args[0]);
+                        
+			execute_command(args);
 
-			execvp(args[0], args);
-			printf("PipeDream: command not found\n");
 		}
 		else
 		{

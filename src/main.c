@@ -114,6 +114,8 @@ void execute_command(char *args[])
 
 void execute_process(char *args[], char *output_file, char *input_file)
 {
+#ifdef __linux__
+
         pid_t pid = fork();
 
         if (pid == 0)
@@ -152,6 +154,10 @@ void execute_process(char *args[], char *output_file, char *input_file)
         {
                 wait(NULL);
         }
+
+#elif _WIN32
+
+#endif
 }
 
 void execute_pipe(char *args[], int pipe_index)

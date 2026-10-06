@@ -137,6 +137,10 @@ void execute_process(char *args[], char *output_file, char *input_file)
 
         si.cb = sizeof(si);
 
+		si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+
 	HANDLE output_handle = NULL;
 
 	HANDLE input_handle = NULL;
@@ -188,6 +192,11 @@ if (input_file != NULL)
         }
 			return;
 		}
+
+		SetHandleInformation(
+        output_handle,
+        HANDLE_FLAG_INHERIT,
+        HANDLE_FLAG_INHERIT);
 
 		si.dwFlags |= STARTF_USESTDHANDLES;
 		si.hStdOutput = output_handle;
@@ -280,128 +289,73 @@ void execute_pipe(char *args[], int pipe_index)
 
 	#elif _WIN32
 
-	        SECURITY_ATTRIBUTES sa;
+        char command[1000] = "";
 
-        sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-        sa.lpSecurityDescriptor = NULL;
-        sa.bInheritHandle = TRUE;
+        args[0] = (char *)get_command(args[0]);
 
-        HANDLE read_handle;
-        HANDLE write_handle;
-
-        if (!CreatePipe(
-                &read_handle,
-                &write_handle,
-                &sa,
-                0))
+        for (int i = 0; i < pipe_index; i++)
         {
-                printf("PipeDream: cannot create pipe\n");
+                if (i > 0)
+                {
+                        strcat(command, " ");
+                }
+
+                strcat(command, args[i]);
+        }
+
+        strcat(command, " | ");
+
+        args[pipe_index + 1] =
+                (char *)get_command(args[pipe_index + 1]);
+
+        for (int i = pipe_index + 1; args[i] != NULL; i++)
+        {
+                if (i > pipe_index + 1)
+                {
+                        strcat(command, " ");
+                }
+
+                strcat(command, args[i]);
+        }
+
+        char command_line[1100];
+
+        snprintf(
+                command_line,
+                sizeof(command_line),
+                "cmd.exe /C \"%s\"",
+                command);
+
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+
+        ZeroMemory(&si, sizeof(si));
+        ZeroMemory(&pi, sizeof(pi));
+
+        si.cb = sizeof(si);
+
+        if (!CreateProcessA(
+                NULL,
+                command_line,
+                NULL,
+                NULL,
+                FALSE,
+                0,
+                NULL,
+                NULL,
+                &si,
+                &pi))
+        {
+                printf("PipeDream: command not found\n");
                 return;
         }
-		STARTUPINFOA si1;
-		STARTUPINFOA si2;
-		
-		PROCESS_INFORMATION pi1;
-		PROCESS_INFORMATION pi2;
 
-        ZeroMemory(&si1, sizeof(si1));
-        ZeroMemory(&si2, sizeof(si2));
+        WaitForSingleObject(pi.hProcess, INFINITE);
 
-        ZeroMemory(&pi1, sizeof(pi1));
-        ZeroMemory(&pi2, sizeof(pi2));
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
 
-        si1.cb = sizeof(si1);
-        si2.cb = sizeof(si2);
-
-		si1.dwFlags |= STARTF_USESTDHANDLES;
-        si1.hStdOutput = write_handle;
-
-        si2.dwFlags |= STARTF_USESTDHANDLES;
-        si2.hStdInput = read_handle;
-
-		char command1[500] = "";
-		char command2[500] = "";
-		
-		args[0] = (char *)get_command(args[0]);
-
-for (int i = 0; args[i] != NULL; i++)
-{
-        strcat(command1, args[i]);
-        strcat(command1, " ");
-}
-
-args[pipe_index + 1] = (char *)get_command(args[pipe_index + 1]);
-
-for (int i = pipe_index + 1; args[i] != NULL; i++)
-{
-        strcat(command2, args[i]);
-        strcat(command2, " ");
-}
-
-char command_line1[600];
-
-snprintf(command_line1, sizeof(command_line1),
-         "cmd.exe /C \"%s\"", command1);
-
-if (!CreateProcessA(
-        NULL,
-        command_line1,
-        NULL,
-        NULL,
-        TRUE,
-        0,
-        NULL,
-        NULL,
-        &si1,
-        &pi1))
-{
-        printf("PipeDream: command not found\n");
-        CloseHandle(read_handle);
-        CloseHandle(write_handle);
-        return;
-}
-
-char command_line2[600];
-
-snprintf(command_line2, sizeof(command_line2),
-         "cmd.exe /C \"%s\"", command2);
-
-if (!CreateProcessA(
-        NULL,
-        command_line2,
-        NULL,
-        NULL,
-        TRUE,
-        0,
-        NULL,
-        NULL,
-        &si2,
-        &pi2))
-{
-        printf("PipeDream: command not found\n");
-
-        CloseHandle(pi1.hProcess);
-        CloseHandle(pi1.hThread);
-        CloseHandle(read_handle);
-        CloseHandle(write_handle);
-
-        return;
-}
-
-WaitForSingleObject(pi1.hProcess, INFINITE);
-WaitForSingleObject(pi2.hProcess, INFINITE);
-
-CloseHandle(pi1.hProcess);
-CloseHandle(pi1.hThread);
-
-CloseHandle(pi2.hProcess);
-CloseHandle(pi2.hThread);
-
-CloseHandle(read_handle);
-CloseHandle(write_handle);
-
-
-	#endif
+#endif
 }
 
 

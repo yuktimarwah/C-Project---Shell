@@ -59,50 +59,7 @@ void execute_command(char *args[])
 {
         args[0] = (char *)get_command(args[0]);
 
-#ifdef _WIN32
-
-        char command[1000] = "";
-
-        for (int i = 0; args[i] != NULL; i++)
-        {
-                strcat(command, args[i]);
-                strcat(command, " ");
-        }
-
-        char command_line[1100];
-
-        snprintf(command_line, sizeof(command_line),"cmd.exe /C \"%s\"", command);
-
-         STARTUPINFOA si;
-        PROCESS_INFORMATION pi;
-
-        ZeroMemory(&si, sizeof(si));
-        ZeroMemory(&pi, sizeof(pi));
-
-        si.cb = sizeof(si);
-
-        if (!CreateProcessA(
-                NULL,
-                command_line,
-                NULL,
-                NULL,
-                FALSE,
-                0,
-                NULL,
-                NULL,
-                &si,
-                &pi))
-        {
-                printf("PipeDream: command not found\n");
-                return;
-        }
-
-        WaitForSingleObject(pi.hProcess, INFINITE);
-
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-
-#elif __linux__
+#ifdef __linux__
 
         execvp(args[0], args);
 
@@ -119,7 +76,7 @@ void execute_process(char *args[], char *output_file, char *input_file)
         pid_t pid = fork();
 
         if (pid == 0)
-        {
+       {
                 if (output_file != NULL)
                 {
                         int fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -156,6 +113,50 @@ void execute_process(char *args[], char *output_file, char *input_file)
         }
 
 #elif _WIN32
+
+	args[0] = (char *)get_command(args[0]);
+
+	char command[1000] = "";
+
+        for (int i = 0; args[i] != NULL; i++)
+        {
+                strcat(command, args[i]);
+                strcat(command, " ");
+        }
+
+        char command_line[1100];
+
+        snprintf(command_line, sizeof(command_line),
+                 "cmd.exe /C \"%s\"", command);
+
+        STARTUPINFOA si;
+        PROCESS_INFORMATION pi;
+
+        ZeroMemory(&si, sizeof(si));
+        ZeroMemory(&pi, sizeof(pi));
+
+        si.cb = sizeof(si);
+
+        if (!CreateProcessA(
+                NULL,
+                command_line,
+                NULL,
+                NULL,
+                FALSE,
+                0,
+                NULL,
+                NULL,
+                &si,
+                &pi))
+        {
+                printf("PipeDream: command not found\n");
+                return;
+        }
+
+        WaitForSingleObject(pi.hProcess, INFINITE);
+
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
 
 #endif
 }
